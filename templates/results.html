@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>測驗結果</h2>
+<p>正確率：{{ accuracy }}%</p>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>關卡</th>
+            <th>兒童選擇</th>
+            <th>系統判斷</th>
+            <th>時間</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in results %}
+        <tr>
+            <td>{{ r.stage }}</td>
+            <td>{{ r.child_choice }}</td>
+            <td>{{ r.system_result }}</td>
+            <td>{{ r.test_datetime }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('auth.login') }}" class="btn btn-secondary">返回登入</a>
+{% endblock %}

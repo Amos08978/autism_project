@@ -1,0 +1,7 @@
+flask
+django
+sqlalchemy
+psycopg2-binary
+tensorflow
+mediapipe
+opencv-python

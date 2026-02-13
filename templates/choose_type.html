@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>選擇表情圖片類型</h2>
+<form method="post">
+    <select name="type_id" class="form-select">
+        {% for t in types %}
+        <option value="{{ t.id }}">{{ t.type_name }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary mt-3">開始測驗</button>
+</form>
+{% endblock %}

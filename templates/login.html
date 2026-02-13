@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>登入</h2>
+<form method="post" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">家長姓名</label>
+        <input type="text" name="parent_name" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">兒童姓名</label>
+        <input type="text" name="child_name" class="form-control" required>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">登入</button>
+    </div>
+</form>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-info mt-3">
+      {% for msg in messages %}
+        <p>{{ msg }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<a href="{{ url_for('auth.register') }}" class="btn btn-link mt-3">註冊新帳號</a>
+{% endblock %}

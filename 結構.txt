@@ -1,0 +1,47 @@
+autism_project/
+│── app.py
+│── alembic.ini
+│── autism_project.db
+│── requirements.txt
+│── migrations/
+│   └── env.py
+│── models/
+│   ├── __init__.py
+│   ├── base.py
+│   ├── accounts.py
+│   ├── loginlog.py
+│   ├── testresults.py
+│   ├── expressiontypes.py
+│   └── expressionimages.py
+│── routes/
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── test.py
+│   └── admin.py
+│── templates/
+│   ├── base.html
+│   ├── login.html
+│   ├── register.html
+│   ├── results.html
+│   ├── index.html
+│   ├── logout.html
+│   ├── choose_type.html
+│   ├── add_type.html
+│   ├── add_image.html
+│   ├── admin_login.html
+│   ├── admin_index.html
+│   ├── admin_base.html
+│   ├── admin_login_success.html
+│   ├── admin_results.html
+│   ├── image_list.html
+│   ├── edit_image.html
+│   ├── select_type.html
+│   ├── play_stage.html
+│   ├── game_complete.html
+│   ├── game_home.html
+│── static/
+│   ├── img/
+│   ├── css
+│   │    ├── style.css
+│   │    └── game_complete.css
+│   └── js/script.js

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-center mt-4">挑戰關卡：{{ stage }}</h2>
+
+<div class="text-center">
+    {% if image %}
+        <img src="{{ url_for('static', filename=image.image_path) }}"
+            alt="{{ stage }}" class="img-fluid" style="max-height:300px;">
+    {% else %}
+        <p>找不到圖片</p>
+    {% endif %}
+</div>
+
+<div class="row justify-content-center mt-4">
+    {% for choice in ["喜", "怒", "哀", "樂"] %}
+    <div class="col-md-3 text-center mb-3">
+        <form method="post" action="{{ url_for('finish_stage', stage=stage) }}">
+            <input type="hidden" name="child_choice" value="{{ choice }}">
+            <button type="submit" class="btn btn-lg btn-primary w-100">
+                {{ choice }}
+            </button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

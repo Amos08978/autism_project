@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-center mt-4">選擇挑戰的圖片類型</h2>
+
+<form method="post" action="{{ url_for('select_type') }}" class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <label class="form-label">類型</label>
+        <select name="type_id" class="form-select" required>
+            {% for t in types %}
+            <option value="{{ t.id }}">{{ t.type_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-12 text-center mt-3">
+        <button type="submit" class="btn btn-primary btn-lg">開始挑戰</button>
+    </div>
+</form>
+{% endblock %}

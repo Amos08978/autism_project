@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Bootstrap Modal -->
+<div class="modal fade show" id="loginSuccessModal" tabindex="-1" aria-labelledby="loginSuccessLabel" aria-hidden="true" style="display:block; background:rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginSuccessLabel">登入成功</h5>
+      </div>
+      <div class="modal-body">
+        管理者登入成功！系統將在 <span id="countdown">5</span> 秒後返回後台首頁，或您可以按下確認立即返回。
+      </div>
+      <div class="modal-footer">
+        <a href="{{ url_for('admin.admin_index') }}" class="btn btn-primary">確認</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 倒數計時
+  let seconds = 5;
+  let countdownElem = document.getElementById("countdown");
+  let timer = setInterval(function() {
+    seconds--;
+    countdownElem.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(timer);
+      window.location.href = "{{ url_for('admin.admin_index') }}";
+    }
+  }, 1000);
+</script>
+{% endblock %}

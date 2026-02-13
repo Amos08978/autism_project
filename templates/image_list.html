@@ -1,0 +1,45 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2>已上傳的表情圖片</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>類型</th>
+            <th>表情階段</th>
+            <th>圖片預覽</th>
+            <th>路徑</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for img in images %}
+        <tr>
+            <td>{{ img.id }}</td>
+            <td>{{ img.type_id }}</td>
+            <td>{{ img.stage }}</td>
+            <td>
+                <img src="{{ url_for('static', filename=img.image_path) }}" 
+                     alt="{{ img.stage }}" 
+                     style="max-height:80px;">
+            </td>
+            <td>{{ img.image_path }}</td>
+            <td>
+                <!-- 編輯按鈕 -->
+                <a href="{{ url_for('admin.edit_image', image_id=img.id) }}" 
+                   class="btn btn-primary btn-sm">編輯</a>
+
+                <!-- 刪除按鈕 -->
+                <form method="post" action="{{ url_for('admin.delete_image', image_id=img.id) }}" 
+                      style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">刪除</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('admin.admin_index') }}" class="btn btn-secondary">回到後台首頁</a>
+{% endblock %}
