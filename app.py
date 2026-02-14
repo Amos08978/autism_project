@@ -7,7 +7,7 @@ from models.expressionimages import ExpressionImages
 from models.expressiontypes import ExpressionTypes
 from datetime import datetime
 from models.testresults import TestResults
-import random
+import random,uuid
 
 app = Flask(__name__)
 app.secret_key = "secret_key"
@@ -40,6 +40,7 @@ def select_type():
         type_id = request.form["type_id"]
         session["selected_type"] = type_id
         session["completed_stages"] = []
+        session["batch_id"] = str(uuid.uuid4())
         return redirect(url_for("play_stage"))
     types = db.query(ExpressionTypes).all()
     return render_template("select_type.html", types=types)
@@ -68,30 +69,37 @@ def play_stage():
 @app.route("/finish_stage/<stage>", methods=["POST"])
 def finish_stage(stage):
     child_choice = request.form["child_choice"]
+    image_id = request.form.get("image_id")
+    if not image_id:
+        flash("尚未設定圖片，無法寫入測試結果")
+        return redirect(url_for("play_stage"))
 
-    # 判斷系統正確答案
     system_result = "O" if child_choice == stage else "X"
 
-    # ✅ 寫入 DB
     db = SessionLocal()
     account_id = session.get("user_id")
+    batch_id = session.get("batch_id")  # ✅ 取出批次 ID
+
     test_result = TestResults(
         account_id=account_id,
+        image_id=int(image_id),
         stage=stage,
         child_choice=child_choice,
         system_result=system_result,
-        test_datetime=datetime.now()
+        test_datetime=datetime.now(),
+        batch_id=batch_id  # ✅ 存入 DB
     )
     db.add(test_result)
     db.commit()
 
-    # 更新完成關卡
     completed = session.get("completed_stages", [])
     if stage not in completed:
         completed.append(stage)
     session["completed_stages"] = completed
 
     return redirect(url_for("play_stage"))
+
+
 
 
 if __name__ == "__main__":

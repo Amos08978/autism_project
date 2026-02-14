@@ -1,26 +1,79 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block content %}
-<h2>測驗結果</h2>
-<p>正確率：{{ accuracy }}%</p>
-<table class="table table-striped">
+<h2>測試結果查詢</h2>
+
+<form method="post" class="mb-3">
+    <label for="child_name" class="form-label">選擇孩子</label>
+    <select name="child_name" class="form-select" required>
+        {% for acc in accounts %}
+            <option value="{{ acc.child_name }}" {% if acc.child_name == selected_child %}selected{% endif %}>
+                {{ acc.child_name }}
+            </option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary mt-2">查詢</button>
+</form>
+
+{% if type_stats %}
+<h4>各類型比例統計</h4>
+<table class="table table-bordered">
     <thead>
         <tr>
-            <th>關卡</th>
-            <th>兒童選擇</th>
-            <th>系統判斷</th>
-            <th>時間</th>
+            <th>類型</th>
+            <th>次數</th>
+            <th>比例 (%)</th>
         </tr>
     </thead>
     <tbody>
-        {% for r in results %}
+        {% for stat in type_stats %}
         <tr>
-            <td>{{ r.stage }}</td>
-            <td>{{ r.child_choice }}</td>
-            <td>{{ r.system_result }}</td>
-            <td>{{ r.test_datetime }}</td>
+            <td>{{ stat.type_name }}</td>
+            <td>{{ stat.count }}</td>
+            <td>{{ stat.percentage }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-<a href="{{ url_for('auth.login') }}" class="btn btn-secondary">返回登入</a>
+{% endif %}
+
+{% if grouped_results %}
+<h4 class="mt-4">詳細測試結果</h4>
+{% for group in grouped_results %}
+<div class="card mb-3">
+    <div class="card-header">
+        測驗批次 {{ group.test_number }}
+        {% if group.incomplete %}
+            <span class="badge bg-warning">未完成</span>
+        {% else %}
+            <span class="badge bg-success">完成</span>
+            <span class="ms-2">準確率: {{ group.accuracy }}%</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>類型</th>
+                    <th>階段</th>
+                    <th>系統判斷</th>
+                    <th>時間</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in group.records %}
+                <tr>
+                    <td>{{ r.image.type.type_name if r.image and r.image.type else '未知' }}</td>
+                    <td>{{ r.image.stage if r.image else '未知' }}</td>
+                    <td>{{ r.system_result }}</td>
+                    <td>{{ r.test_datetime }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<a href="{{ url_for('admin.admin_index') }}" class="btn btn-secondary mt-3">回到後台首頁</a>
 {% endblock %}

@@ -1,26 +1,41 @@
 {% extends "admin_base.html" %}
 {% block content %}
 <h2>編輯圖片</h2>
+
 <form method="post" enctype="multipart/form-data" class="row g-3">
     <div class="col-md-6">
-        <label class="form-label">類型 ID</label>
-        <input type="text" class="form-control" value="{{ image.type_id }}" disabled>
+        <label class="form-label">類型</label>
+        <select name="type_id" class="form-select" required>
+            {% for t in types %}
+                <option value="{{ t.id }}" {% if t.id == image.type_id %}selected{% endif %}>
+                    {{ t.type_name }}
+                </option>
+            {% endfor %}
+        </select>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label">表情階段</label>
+        <label class="form-label">階段</label>
         <input type="text" name="stage" class="form-control" value="{{ image.stage }}" required>
     </div>
-    <div class="col-md-12">
-        <label class="form-label">重新上傳圖片 (可選)</label>
+
+    <div class="col-md-6">
+        <label class="form-label">更新圖片 (可選)</label>
         <input type="file" name="image_file" class="form-control" accept="image/*">
         <small class="text-muted">若不選擇檔案，會保留原圖片</small>
     </div>
+
     <div class="col-12">
         <button type="submit" class="btn btn-primary">更新圖片</button>
     </div>
 </form>
 
-<img src="{{ url_for('static', filename=image.image_path) }}" alt="{{ image.stage }}" style="max-height:150px;" class="mt-3">
+{% if image.image_path %}
+<div class="mt-3">
+    <p>目前圖片：</p>
+    <img src="{{ url_for('static', filename=image.image_path) }}" alt="{{ image.stage }}" style="max-height:150px;">
+</div>
+{% endif %}
 
 <a href="{{ url_for('admin.image_list') }}" class="btn btn-secondary mt-3">回到圖片清單</a>
 {% endblock %}

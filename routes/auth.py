@@ -54,6 +54,21 @@ def login():
 
     return render_template("login.html")
 
+
+
+@auth_bp.route("/privacy_agreement", methods=["GET", "POST"])
+def privacy_agreement():
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "agree":
+            # ✅ 不要 flash，直接進入註冊頁
+            return redirect(url_for("auth.register"))
+        else:
+            # ✅ 僅在不同意時 flash
+            flash("您必須同意個資法才能註冊")
+            return redirect(url_for("index"))
+    return render_template("privacy_agreement.html")
+
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -78,11 +93,14 @@ def register():
                 phone=phone,
                 address=address,
                 email=email,
-                line=line
+                line=line,
+                privacy_signed_at=datetime.now()   # ✅ 簽署時間
             )
             db.add(new_account)
             db.commit()
-            flash("註冊成功！請重新登入")
+            # ✅ 只顯示成功訊息
+            flash("註冊成功！已完成個資法簽署，請重新登入")
             return redirect(url_for("auth.login"))
 
     return render_template("register.html")
+

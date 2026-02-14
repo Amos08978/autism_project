@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">個人資料保護法簽署</h2>
+    <p class="mt-4">
+        為保障您的個人資料安全，本系統遵循《個人資料保護法》相關規範。
+        在您註冊並使用本系統前，請先閱讀並同意以下條款：
+    </p>
+    <ul>
+        <li>您的個人資料僅用於系統帳號建立與測驗紀錄保存。</li>
+        <li>本系統不會將您的資料提供給第三方。</li>
+        <li>您有權隨時要求刪除或修改您的個人資料。</li>
+    </ul>
+
+    <form method="post" class="text-center mt-4">
+        <button type="submit" name="action" value="agree" class="btn btn-success btn-lg">我同意</button>
+        <button type="submit" name="action" value="disagree" class="btn btn-danger btn-lg">不同意</button>
+    </form>
+</div>
+{% endblock %}

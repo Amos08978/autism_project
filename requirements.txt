@@ -5,3 +5,5 @@ psycopg2-binary
 tensorflow
 mediapipe
 opencv-python
+pytest
+gunicorn

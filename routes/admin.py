@@ -6,7 +6,8 @@ from models.expressionimages import ExpressionImages
 from models.testresults import TestResults
 from models.accounts import Accounts
 from collections import defaultdict
-
+from sqlalchemy.orm import joinedload
+from datetime import datetime
 import os
 
 from werkzeug.utils import secure_filename
@@ -42,15 +43,24 @@ def add_type():
 
     if request.method == "POST":
         type_name = request.form["type_name"]
+        file = request.files.get("image_file")
+
+        image_path = None
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            file.save(filepath)
+            image_path = f"img/{filename}"
+
         db: Session = SessionLocal()
-        new_type = ExpressionTypes(type_name=type_name)
+        new_type = ExpressionTypes(type_name=type_name, image_path=image_path)
         db.add(new_type)
         db.commit()
         flash("新增類型成功")
-        # ✅ 新增完成後導回後台首頁
-        return redirect(url_for("admin.admin_index"))
-    return render_template("add_type.html")
+        return redirect(url_for("admin.type_list"))
 
+    return render_template("add_type.html")
 
 @admin_bp.route("/logout")
 def admin_logout():
@@ -148,21 +158,19 @@ def edit_image(image_id):
 
     db: Session = SessionLocal()
     image = db.query(ExpressionImages).filter_by(id=image_id).first()
+    types = db.query(ExpressionTypes).all()
 
     if not image:
         flash("找不到圖片")
         return redirect(url_for("admin.image_list"))
 
     if request.method == "POST":
-        stage = request.form["stage"]
+        image.type_id = request.form["type_id"]
+        image.stage = request.form["stage"]
         file = request.files.get("image_file")
 
-        # 更新表情階段
-        image.stage = stage
-
-        # 如果有重新上傳圖片
         if file and allowed_file(file.filename):
-            filename = f"{image.type_id}_{stage}.png"
+            filename = f"{image.type_id}_{image.stage}.png"
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             file.save(filepath)
@@ -172,8 +180,7 @@ def edit_image(image_id):
         flash("圖片已更新")
         return redirect(url_for("admin.image_list"))
 
-    return render_template("edit_image.html", image=image)
-
+    return render_template("edit_image.html", image=image, types=types)
 
 
 
@@ -181,23 +188,145 @@ def edit_image(image_id):
 def view_results():
     db = SessionLocal()
     accounts = db.query(Accounts).all()
-    grouped_results = []  # 每次測驗的分組結果
+    grouped_results = []
+    selected_child = None
+    type_counts = {}
+    total_records = 0
 
     if request.method == "POST":
         child_name = request.form["child_name"]
+        selected_child = child_name
         account = db.query(Accounts).filter_by(child_name=child_name).first()
         if account:
-            results = db.query(TestResults).filter_by(account_id=account.id).order_by(TestResults.test_datetime).all()
+            results = (
+                db.query(TestResults)
+                .options(joinedload(TestResults.image).joinedload(ExpressionImages.type))
+                .filter_by(account_id=account.id)
+                .order_by(TestResults.test_datetime)
+                .all()
+            )
 
-            # 依照每四筆為一組分批次
-            batch = []
+            # ✅ 改成用 batch_id 分組
+            batches = {}
             for r in results:
-                batch.append(r)
-                if len(batch) == 4:  # 一次測驗完成
-                    total = len(batch)
-                    correct = sum(1 for x in batch if x.system_result == "O")
-                    accuracy = round((correct / total) * 100, 2)
-                    grouped_results.append({"records": batch, "accuracy": accuracy})
-                    batch = []  # 清空，準備下一批
+                batch_id = r.batch_id or "未知批次"
+                if batch_id not in batches:
+                    batches[batch_id] = []
+                batches[batch_id].append(r)
+                total_records += 1
 
-    return render_template("admin_results.html", accounts=accounts, grouped_results=grouped_results)
+                # 統計類型次數
+                if r.image and r.image.type:
+                    type_name = r.image.type.type_name
+                    type_counts[type_name] = type_counts.get(type_name, 0) + 1
+
+            test_number = 0
+            for batch_id, batch in batches.items():
+                test_number += 1
+                type_name = batch[0].image.type.type_name if batch[0].image and batch[0].image.type else "未知"
+                start_time = batch[0].test_datetime
+
+                if len(batch) == 4:
+                    correct = sum(1 for x in batch if x.system_result == "O")
+                    accuracy = round((correct / 4) * 100, 2)
+                    grouped_results.append({
+                        "records": batch,
+                        "accuracy": accuracy,
+                        "test_number": test_number,
+                        "incomplete": False,
+                        "type_name": type_name,
+                        "batch_id": batch_id,
+                        "start_time": start_time
+                    })
+                else:
+                    grouped_results.append({
+                        "records": batch,
+                        "accuracy": None,
+                        "test_number": test_number,
+                        "incomplete": True,
+                        "type_name": type_name,
+                        "batch_id": batch_id,
+                        "start_time": start_time
+                    })
+
+    # 計算比例
+    type_stats = []
+    for type_name, count in type_counts.items():
+        percentage = round((count / total_records) * 100, 2) if total_records > 0 else 0
+        type_stats.append({"type_name": type_name, "count": count, "percentage": percentage})
+
+    return render_template(
+        "admin_results.html",
+        accounts=accounts,
+        grouped_results=grouped_results,
+        selected_child=selected_child,
+        type_stats=type_stats
+    )
+
+
+
+
+@admin_bp.route("/types")
+def type_list():
+    if not session.get("is_admin"):
+        flash("請先登入管理者")
+        return redirect(url_for("admin.admin_login"))
+
+    db: Session = SessionLocal()
+    types = db.query(ExpressionTypes).all()
+    return render_template("type_list.html", types=types)
+
+@admin_bp.route("/edit_type/<int:type_id>", methods=["GET", "POST"])
+def edit_type(type_id):
+    if not session.get("is_admin"):
+        flash("請先登入管理者")
+        return redirect(url_for("admin.admin_login"))
+
+    db: Session = SessionLocal()
+    type_obj = db.query(ExpressionTypes).filter_by(id=type_id).first()
+
+    if not type_obj:
+        flash("找不到類型")
+        return redirect(url_for("admin.type_list"))
+
+    if request.method == "POST":
+        type_obj.type_name = request.form["type_name"]
+        file = request.files.get("image_file")
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            file.save(filepath)
+            type_obj.image_path = f"img/{filename}"
+
+        db.commit()
+        flash("類型已更新")
+        return redirect(url_for("admin.type_list"))
+
+    return render_template("edit_type.html", type_obj=type_obj)
+
+
+@admin_bp.route("/delete_type/<int:type_id>", methods=["POST"])
+def delete_type(type_id):
+    if not session.get("is_admin"):
+        flash("請先登入管理者")
+        return redirect(url_for("admin.admin_login"))
+
+    db: Session = SessionLocal()
+    type_obj = db.query(ExpressionTypes).filter_by(id=type_id).first()
+
+    if type_obj:
+        # 刪除選單圖片檔案
+        if type_obj.image_path:
+            filepath = os.path.join("static", type_obj.image_path)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+        db.delete(type_obj)
+        db.commit()
+        flash("類型已刪除")
+    else:
+        flash("找不到類型")
+
+    return redirect(url_for("admin.type_list"))

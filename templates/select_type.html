@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>選擇圖片類型</h2>
+<form method="post" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">類型</label>
+        <select name="type_id" class="form-select" required>
+            {% for t in types %}
+            <option value="{{ t.id }}">{{ t.type_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">開始挑戰</button>
+    </div>
+</form>
+{% endblock %}

@@ -16,12 +16,12 @@
 </form>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
-    <div class="alert alert-info mt-3">
-      {% for msg in messages %}
-        <p>{{ msg }}</p>
+    <div class="alert alert-info">
+      {% for message in messages %}
+        <p>{{ message }}</p>
       {% endfor %}
     </div>
   {% endif %}
 {% endwith %}
-<a href="{{ url_for('auth.register') }}" class="btn btn-link mt-3">註冊新帳號</a>
+<a href="{{ url_for('auth.privacy_agreement') }}" class="btn btn-link mt-3">註冊新帳號</a>
 {% endblock %}

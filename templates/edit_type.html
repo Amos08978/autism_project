@@ -1,0 +1,24 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2>編輯類型</h2>
+<form method="post" enctype="multipart/form-data" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">類型名稱</label>
+        <input type="text" name="type_name" class="form-control" value="{{ type_obj.type_name }}" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">選單圖片 (可選)</label>
+        <input type="file" name="image_file" class="form-control" accept="image/*">
+        <small class="text-muted">若不選擇檔案，會保留原圖片</small>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">更新類型</button>
+    </div>
+</form>
+
+{% if type_obj.image_path %}
+<img src="{{ url_for('static', filename=type_obj.image_path) }}" alt="{{ type_obj.type_name }}" style="max-height:150px;" class="mt-3">
+{% endif %}
+
+<a href="{{ url_for('admin.type_list') }}" class="btn btn-secondary mt-3">回到類型清單</a>
+{% endblock %}

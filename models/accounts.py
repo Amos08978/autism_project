@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, TIMESTAMP
+from sqlalchemy.orm import relationship
 from models.base import Base
 
 class Accounts(Base):
@@ -11,3 +12,7 @@ class Accounts(Base):
     address = Column(String(200))
     email = Column(String(100))
     line = Column(String(100))
+    privacy_signed_at = Column(TIMESTAMP, default=None)  # ✅ 新增欄位
+
+    # 關聯到 TestResults
+    results = relationship("TestResults", back_populates="account", cascade="all, delete-orphan")
