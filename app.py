@@ -12,9 +12,9 @@ from models.capturesettings import CaptureSettings
 from hsemotion.facial_emotions import HSEmotionRecognizer
 from models.testrecord import TestRecord
 from models.expressionmapping import ExpressionMapping
+from deepface import DeepFace
 
-
-import random,uuid,os,time,base64
+import random,uuid,os,time,base64,cv2
 from io import BytesIO
 from PIL import Image
 import numpy as np
@@ -131,8 +131,6 @@ def learn_stage(stage):
 
 
 
-
-
 @app.route("/check_expression/<stage>", methods=["POST"])
 def check_expression(stage):
     data = request.get_json()
@@ -141,16 +139,25 @@ def check_expression(stage):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
     frame = np.array(img)
 
-    # 儲存截圖
+    # DeepFace 辨識
+    analysis = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False, detector_backend='opencv')
+    emotion = analysis[0]['dominant_emotion']
+    score = float(analysis[0]['emotion'][emotion])
+
+    # 畫框
+    region = analysis[0]['region']
+    x, y, w, h = region['x'], region['y'], region['w'], region['h']
+    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+    cv2.putText(frame, emotion, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+
+    # 儲存有框圖片（檔名用英文/數字）
     save_dir = "static/captured_images"
     os.makedirs(save_dir, exist_ok=True)
-    filename = f"{stage}_{int(time.time())}.png"
+    filename = f"{uuid.uuid4().hex}.png"   # 避免中文亂碼
     filepath = os.path.join(save_dir, filename)
-    img.save(filepath)
+    cv2.imwrite(filepath, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
-    # 模型預測
-    emotion, score = fer.predict_emotions(frame)
-
+    # 映射表比對
     db = SessionLocal()
     rule = db.query(ExpressionMapping).filter_by(source_emotion=emotion).first()
     mapped_emotion = rule.mapped_stage if rule else "未知"
@@ -159,11 +166,10 @@ def check_expression(stage):
     record = TestRecord(
         batch_id=session.get("batch_id"),
         account_id=session.get("user_id"),
-        stage=stage,
-        child_choice=None,
+        stage=stage,   # 中文存到資料庫，不放檔名
         system_result=result,
         ai_emotion=emotion,
-        image_file=filename,
+        image_file=filename,  # 檔名只用英文/數字
         test_datetime=datetime.now()
     )
     db.add(record)
@@ -172,9 +178,51 @@ def check_expression(stage):
     return jsonify({
         "result": result,
         "emotion": emotion,
+        "region": region,   # 新增這個
         "file": filename,
         "success": True if result == "O" else False
     })
+
+
+
+#改用Deepfaces辨識
+@app.route("/test_expression/<stage>", methods=["POST"])
+def test_expression(stage):
+    data = request.get_json()
+    img_data = data["image"].split(",")[1]
+    img_bytes = base64.b64decode(img_data)
+    img = Image.open(BytesIO(img_bytes)).convert("RGB")
+    frame = np.array(img)
+
+    # DeepFace 辨識
+    analysis = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False, detector_backend='opencv')
+    emotion = analysis[0]['dominant_emotion']
+    score = float(analysis[0]['emotion'][emotion])  # ← 轉成 float
+
+    # 取出人臉區域並畫框
+    region = analysis[0]['region']
+    x, y, w, h = region['x'], region['y'], region['w'], region['h']
+    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+    cv2.putText(frame, emotion, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+
+    # 儲存有框的圖片
+    save_dir = "static/test_images"
+    os.makedirs(save_dir, exist_ok=True)
+    filename = f"test_{int(time.time())}.png"
+    filepath = os.path.join(save_dir, filename)
+    cv2.imwrite(filepath, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+    return jsonify({
+        "emotion": emotion,
+        "score": score,
+        "file": filename
+    })
+
+
+
+@app.route("/test_compare_stage/<stage>")
+def compare_stage(stage):
+    return render_template("test_compare_stage.html", stage=stage)
 
 
 if __name__ == "__main__":

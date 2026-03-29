@@ -12,6 +12,9 @@ from datetime import datetime
 from models.capturesettings import CaptureSettings
 from models.testrecord import TestRecord
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import desc
+
+
 
 import os
 
@@ -220,6 +223,9 @@ def edit_image(image_id):
 
 
 
+
+
+
 @admin_bp.route("/results", methods=["GET", "POST"])
 def view_results():
     db = SessionLocal()
@@ -234,20 +240,20 @@ def view_results():
         selected_child = child_name
         account = db.query(Accounts).filter_by(child_name=child_name).first()
         if account:
-            # 小朋友選擇紀錄 (TestResults)
+            # 小朋友選擇紀錄 (TestResults) → 最新在最上面
             results = (
                 db.query(TestResults)
                 .options(joinedload(TestResults.image).joinedload(ExpressionImages.type))
                 .filter_by(account_id=account.id)
-                .order_by(TestResults.test_datetime)
+                .order_by(desc(TestResults.test_datetime))
                 .all()
             )
 
-            # AI 判斷紀錄 (TestRecord)
+            # AI 判斷紀錄 (TestRecord) → 最新在最上面
             records_ai = (
                 db.query(TestRecord)
                 .filter_by(account_id=account.id)
-                .order_by(TestRecord.test_datetime)
+                .order_by(desc(TestRecord.test_datetime))
                 .all()
             )
 
@@ -270,10 +276,18 @@ def view_results():
                     batches[batch_id] = {"results": [], "records_ai": []}
                 batches[batch_id]["records_ai"].append(rec)
 
-            # 整理成 grouped_results
-            test_number = 0
-            for batch_id, batch in batches.items():
-                test_number += 1
+            # 整理成 grouped_results，依照時間排序
+            sorted_batches = sorted(
+                batches.items(),
+                key=lambda x: x[1]["results"][0].test_datetime if x[1]["results"] else None,
+                reverse=True  # 最新在最上面
+            )
+
+            total_batches = len(sorted_batches)
+            for idx, (batch_id, batch) in enumerate(sorted_batches, start=1):
+                # 計算編號：最新一筆 = 第 total_batches 次
+                test_number = total_batches - idx + 1
+
                 type_name = (
                     batch["results"][0].image.type.type_name
                     if batch["results"] and batch["results"][0].image and batch["results"][0].image.type
@@ -306,6 +320,7 @@ def view_results():
                         "start_time": start_time
                     })
 
+    # 統計各類型比例
     type_stats = []
     for type_name, count in type_counts.items():
         percentage = round((count / total_records) * 100, 2) if total_records > 0 else 0
@@ -318,6 +333,7 @@ def view_results():
         selected_child=selected_child,
         type_stats=type_stats
     )
+
 
 
 @admin_bp.route("/types")
@@ -464,4 +480,4 @@ def result_override(id):
         record.final_result = new_result
         db.commit()
         flash("人工覆核已更新", "success")
-    return redirect(url_for("admin.mapping"))  # 或者跳回 admin.results
+    return redirect(url_for("admin.view_results"))  # 或者跳回 admin.results

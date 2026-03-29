@@ -7,7 +7,16 @@
 <form method="post" action="{{ url_for('admin.mapping_add') }}" class="mb-4">
     <div class="row">
         <div class="col-md-4">
-            <input type="text" name="source_emotion" class="form-control" placeholder="模型表情 (happy)" required>
+            <!-- DeepFace 常見輸出情緒 -->
+            <select name="source_emotion" class="form-select" required>
+                <option value="happy">happy</option>
+                <option value="sad">sad</option>
+                <option value="angry">angry</option>
+                <option value="surprise">surprise</option>
+                <option value="fear">fear</option>
+                <option value="disgust">disgust</option>
+                <option value="neutral">neutral</option>
+            </select>
         </div>
         <div class="col-md-4">
             <select name="mapped_stage" class="form-select" required>
@@ -45,7 +54,7 @@
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>模型表情</th>
+            <th>模型表情 (DeepFace)</th>
             <th>對應關卡</th>
             <th>操作</th>
         </tr>

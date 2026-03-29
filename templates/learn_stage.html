@@ -7,8 +7,10 @@
          alt="{{ stage }}" class="img-fluid h-100 w-100 object-fit-contain">
   </div>
 
-  <div class="col-md-6 d-flex justify-content-center align-items-center">
+  <div class="col-md-6 d-flex justify-content-center align-items-center position-relative">
     <video id="camera" autoplay playsinline class="w-100 h-100"></video>
+    <!-- 疊加方框的 canvas -->
+    <canvas id="overlay" class="position-absolute top-0 start-0 w-100 h-100"></canvas>
     <canvas id="snapshot" style="display:none;"></canvas>
   </div>
 </div>
@@ -28,8 +30,25 @@ let count = 0;
 
 function updateRemaining() {
     let remaining = captureTimes - count;
-    document.getElementById('remaining').innerHTML = 
+    document.getElementById('remaining').innerHTML =
         "剩餘拍照次數：" + remaining;
+}
+
+function drawBox(region, emotion) {
+    let video = document.getElementById('camera');
+    let canvas = document.getElementById('overlay');
+    let ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(region.x, region.y, region.w, region.h);
+
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "lime";
+    ctx.fillText(emotion, region.x, region.y - 10);
 }
 
 function captureAndSend() {
@@ -48,9 +67,14 @@ function captureAndSend() {
     })
     .then(res => res.json())
     .then(data => {
-        document.getElementById('result').innerHTML += 
-            "<p>第 " + (count+1) + " 次檢查結果：" + data.result + 
+        document.getElementById('result').innerHTML +=
+            "<p>第 " + (count+1) + " 次檢查結果：" + data.result +
             " (AI判斷：" + data.emotion + ")</p>";
+
+        // 即時畫框
+        if (data.region) {
+            drawBox(data.region, data.emotion);
+        }
 
         if (data.success) {
             clearInterval(timer);
@@ -63,7 +87,6 @@ function captureAndSend() {
 
     if (count >= captureTimes) {
         clearInterval(timer);
-        // 完成後自動跳轉到下一關
         window.location.href = "{{ url_for('play_stage') }}";
     }
 }
