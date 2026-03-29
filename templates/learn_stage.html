@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mt-4 bg-warning p-3" style="height:80vh;">
+  <h2 class="text-center mt-2">學一學：{{ stage }}</h2>
+  <div class="col-md-6 d-flex justify-content-center align-items-center">
+    <img src="{{ url_for('static', filename=image.image_path) }}"
+         alt="{{ stage }}" class="img-fluid h-100 w-100 object-fit-contain">
+  </div>
+
+  <div class="col-md-6 d-flex justify-content-center align-items-center">
+    <video id="camera" autoplay playsinline class="w-100 h-100"></video>
+    <canvas id="snapshot" style="display:none;"></canvas>
+  </div>
+</div>
+
+<div id="result" class="text-center mt-3"></div>
+<div id="remaining" class="text-center mt-2 text-muted"></div>
+
+<script>
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    document.getElementById('camera').srcObject = stream;
+  });
+
+let intervalSeconds = {{ interval }};
+let captureTimes = {{ times }};
+let count = 0;
+
+function updateRemaining() {
+    let remaining = captureTimes - count;
+    document.getElementById('remaining').innerHTML = 
+        "剩餘拍照次數：" + remaining;
+}
+
+function captureAndSend() {
+    let video = document.getElementById('camera');
+    let canvas = document.getElementById('snapshot');
+    let ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    let data = canvas.toDataURL('image/png');
+
+    fetch("{{ url_for('check_expression', stage=stage) }}", {
+        method: "POST",
+        body: JSON.stringify({ image: data }),
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('result').innerHTML += 
+            "<p>第 " + (count+1) + " 次檢查結果：" + data.result + 
+            " (AI判斷：" + data.emotion + ")</p>";
+
+        if (data.success) {
+            clearInterval(timer);
+            window.location.href = "{{ url_for('play_stage') }}";
+        }
+    });
+
+    count++;
+    updateRemaining();
+
+    if (count >= captureTimes) {
+        clearInterval(timer);
+        // 完成後自動跳轉到下一關
+        window.location.href = "{{ url_for('play_stage') }}";
+    }
+}
+
+// 初始化顯示剩餘次數
+updateRemaining();
+
+// 啟動定時拍照
+let timer = setInterval(captureAndSend, intervalSeconds * 1000);
+</script>
+{% endblock %}

@@ -24,6 +24,23 @@
         <input type="file" name="image_file" class="form-control" accept="image/*">
         <small class="text-muted">若不選擇檔案，會保留原圖片</small>
     </div>
+    
+    <div class="col-md-6">
+        <label class="form-label">更新音檔 (可選)</label>
+        <input type="file" name="audio_file" class="form-control" accept="audio/*">
+        <small class="text-muted">若不選擇檔案，會保留原音檔</small>
+    </div>
+
+    {% if image.audio_path %}
+    <div class="mt-3">
+        <p>目前音檔：</p>
+        <audio controls>
+            <source src="{{ url_for('static', filename=image.audio_path) }}" type="audio/mpeg">
+            您的瀏覽器不支援音檔播放
+        </audio>
+    </div>
+    {% endif %}
+
 
     <div class="col-12">
         <button type="submit" class="btn btn-primary">更新圖片</button>

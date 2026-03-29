@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 class="text-center mt-4">選擇挑戰的圖片類型</h2>
-
-<div class="row justify-content-center mt-4">
+<img src="static/img/image.jpg" class="img-fluid" alt="...">
+<!--<h2 class="text-center mt-4">請選擇挑戰的圖片類型</h2>-->
+<hr class="my-3">
+<div class="row justify-content-center bg-warning pt-3 mx-1">
     {% for t in types %}
     <div class="col-md-3 col-6 text-center mb-4">
         <form method="post" action="{{ url_for('select_type') }}">
@@ -11,7 +12,7 @@
                 {% if t.image_path %}
                     <img src="{{ url_for('static', filename=t.image_path) }}"
                         alt="{{ t.type_name }}"
-                        style="max-width:100%; height:150px; object-fit:contain;">
+                        style="max-width:100%; height:200px; object-fit:contain;">
                 {% else %}
                     <div class="text-muted">尚未設定圖片</div>
                 {% endif %}

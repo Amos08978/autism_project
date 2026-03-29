@@ -1,20 +1,63 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center">個人資料保護法簽署</h2>
-    <p class="mt-4">
-        為保障您的個人資料安全，本系統遵循《個人資料保護法》相關規範。
-        在您註冊並使用本系統前，請先閱讀並同意以下條款：
+
+<img src="static/img/PDCF.jpg" class="img-fluid" alt="...">
+<div class="container mt-2">
+
+    <p class="fs-6 mt-4">
+        此簽署書簽署流程是為了保障您和孩子的個人資料安全，本系統遵循《個人資料保護法》相關規範。<br/>
+        讓孩子能使用本情緒學習系統並請先完成註冊與學習記錄(歷程紀錄)，並用於學習成效分析與系統優化提供數據參考，
+        提供本情緒學習系統之帳號註冊、學習記錄與成效分析，以及參與訪談的贈品寄送，
+        我們依《個人資料保護法》告知以下事項：<br/>
     </p>
+    
+    <h5 class="fw-bold text-success">一、蒐集目的</h5>
     <ul>
-        <li>您的個人資料僅用於系統帳號建立與測驗紀錄保存。</li>
-        <li>本系統不會將您的資料提供給第三方。</li>
-        <li>您有權隨時要求刪除或修改您的個人資料。</li>
+        <li>帳號註冊、身份確認、登入管理。</li>
+        <li>學習評測與歷程紀錄、成效分析與報告呈現(以系統資料為主)。</li>
+        <li>以去識別化方式做統計分析，用於研究、教學改進與系統優化。</li>
+        <li>訪談聯繫與贈品寄送(地址 / Line 帳號僅限您選擇提供時)。</li>
     </ul>
 
-    <form method="post" class="text-center mt-4">
-        <button type="submit" name="action" value="agree" class="btn btn-success btn-lg">我同意</button>
-        <button type="submit" name="action" value="disagree" class="btn btn-danger btn-lg">不同意</button>
+    <h5 class="fw-bold text-success">二、蒐集資料</h5>
+    <ul>
+        <li><span class="fw-bold">基本資料：</span>孩子之姓名 / 代號 / 暱稱、年齡或年齡區間、年級、性別。</li>
+        <li><span class="fw-bold">聯絡資料(大人)：</span>家長 / 老師 / 治療師之姓名(或稱謂)、Email、電話 / 手機(用於通知 / 找回帳號)。</li>
+        <li><span class="fw-bold">學習與評量資料(系統核心)：</span>測驗結果、作答紀錄、情緒辨識正確率、任務完成狀況、練習頻率、反應時間等。</li>
+        <li><span class="fw-bold">系統紀錄：</span>登入時間、裝置 / 瀏覽資訊、IP、Cookie(用於資安與系統穩定)。</li>
+        <li>不會要求填寫身分證字號(AD)；若未來因研究設計或單位規範需要，會另外明確告知並取得同意。</li>
+    </ul>
+
+    <h5 class="fw-bold text-success">三、使用方式、期間與對象</h5>
+    <ul>
+        <li><span class="fw-bold">使用方式：</span>以人工或自動化方式蒐集、保存、處理與利用(如建檔、查詢、統計分析、通知聯繫)。</li>
+        <li><span class="fw-bold">保存期間：</span>自您開始使用起至蒐集目的完成或您依法提出停止 / 刪除為止，若依法令或研究管理需要保存期限者，依規定辦理。</li>
+        <li><span class="fw-bold">利用地區：</span>以台灣地區為主；若使用雲端服務涉及跨境傳輸，將採取適當保護措施。</li>
+        <li><span class="fw-bold">利用對象：</span>本系統營運 / 研究團隊之授權人員及提供必要服務之合作廠商(如雲端主機、Email/簡訊服務、物流寄送)，僅在達成目的必要範圍內使用。</li>
+    </ul>
+
+    <h5 class="fw-bold text-success">四、資料保護措施</h5>
+    <ul>
+        <li>我們採取合理安全措施，例如：加密傳輸、存取權限控管、操作紀錄與內部管理機制，避免未經授權的存取或洩漏。</li>  
+    </ul>
+
+    <h5 class="fw-bold text-success">五、同意請勾選</h5>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="" id="flexCheckAgree">
+        <label class="form-check-label" for="flexCheckAgree">
+            我已閱讀並同意本系統於上述目的範圍內蒐集、處理及利用本人與兒童之個人資料（含學習與評測相關資料）。
+        </label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="" id="flexCheckGift">
+        <label class="form-check-label" for="flexCheckGift">
+            我同意提供地址/Line作為「訪談聯繫」及「贈品寄送」用途。
+        </label>
+    </div>
+
+    <form method="post" class="row text-center mt-4 mb-5">
+        <button type="submit" name="action" value="agree" class="col-md btn btn-success btn-lg w-100 me-4 mb-2">我同意</button>
+        <button type="submit" name="action" value="disagree" class="col-md btn btn-danger btn-lg w-100 mb-2">不同意</button>
     </form>
 </div>
 {% endblock %}

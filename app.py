@@ -7,9 +7,27 @@ from models.expressionimages import ExpressionImages
 from models.expressiontypes import ExpressionTypes
 from datetime import datetime
 from models.testresults import TestResults
-import random,uuid
+from flask import jsonify
+from models.capturesettings import CaptureSettings
+from hsemotion.facial_emotions import HSEmotionRecognizer
+from models.testrecord import TestRecord
+from models.expressionmapping import ExpressionMapping
+
+
+import random,uuid,os,time,base64
+from io import BytesIO
+from PIL import Image
+import numpy as np
+
+import timm
+import torch.serialization
+torch.serialization.add_safe_globals([timm.models.efficientnet.EfficientNet])
 
 app = Flask(__name__)
+
+fer = HSEmotionRecognizer(model_name='enet_b0_8_best_afew', device='cpu')
+
+
 app.secret_key = "secret_key"
 
 app.register_blueprint(auth_bp)
@@ -97,9 +115,66 @@ def finish_stage(stage):
         completed.append(stage)
     session["completed_stages"] = completed
 
-    return redirect(url_for("play_stage"))
+    return redirect(url_for("learn_stage", stage=stage))
 
 
+#學一學
+
+@app.route("/learn_stage/<stage>")
+def learn_stage(stage):
+    type_id = session.get("selected_type")
+    db = SessionLocal()
+    image = db.query(ExpressionImages).filter_by(type_id=type_id, stage=stage).first()
+    settings = db.query(CaptureSettings).first()
+    return render_template("learn_stage.html", stage=stage, image=image,
+                           interval=settings.interval, times=settings.times)
+
+
+
+
+
+@app.route("/check_expression/<stage>", methods=["POST"])
+def check_expression(stage):
+    data = request.get_json()
+    img_data = data["image"].split(",")[1]
+    img_bytes = base64.b64decode(img_data)
+    img = Image.open(BytesIO(img_bytes)).convert("RGB")
+    frame = np.array(img)
+
+    # 儲存截圖
+    save_dir = "static/captured_images"
+    os.makedirs(save_dir, exist_ok=True)
+    filename = f"{stage}_{int(time.time())}.png"
+    filepath = os.path.join(save_dir, filename)
+    img.save(filepath)
+
+    # 模型預測
+    emotion, score = fer.predict_emotions(frame)
+
+    db = SessionLocal()
+    rule = db.query(ExpressionMapping).filter_by(source_emotion=emotion).first()
+    mapped_emotion = rule.mapped_stage if rule else "未知"
+    result = "O" if mapped_emotion == stage else "X"
+
+    record = TestRecord(
+        batch_id=session.get("batch_id"),
+        account_id=session.get("user_id"),
+        stage=stage,
+        child_choice=None,
+        system_result=result,
+        ai_emotion=emotion,
+        image_file=filename,
+        test_datetime=datetime.now()
+    )
+    db.add(record)
+    db.commit()
+
+    return jsonify({
+        "result": result,
+        "emotion": emotion,
+        "file": filename,
+        "success": True if result == "O" else False
+    })
 
 
 if __name__ == "__main__":

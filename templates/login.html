@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>登入</h2>
+<img src="static/img/index_banner.jpg" class="img-fluid" alt="...">
+<h2 class="mt-4">請登入</h2>
 <form method="post" class="row g-3">
     <div class="col-md-6">
         <label class="form-label">家長姓名</label>
@@ -10,8 +11,9 @@
         <label class="form-label">兒童姓名</label>
         <input type="text" name="child_name" class="form-control" required>
     </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-primary">登入</button>
+    <div class="col-12 mb-5">
+        <button type="submit" class="btn btn-success w-100 mb-3">登入</button>
+        <a href="{{ url_for('auth.privacy_agreement') }}"  class="btn btn-outline-info">註冊新帳號</a>
     </div>
 </form>
 {% with messages = get_flashed_messages() %}
@@ -23,5 +25,5 @@
     </div>
   {% endif %}
 {% endwith %}
-<a href="{{ url_for('auth.privacy_agreement') }}" class="btn btn-link mt-3">註冊新帳號</a>
+<!--<a href="{{ url_for('auth.privacy_agreement') }}" class="btn btn-link mt-3">註冊新帳號</a>-->
 {% endblock %}

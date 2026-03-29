@@ -1,16 +1,27 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="text-center mt-5">
-    <h1 class="display-4">歡迎來到 Autism Project</h1>
-    <p class="lead mt-3">這是一個結合 AI 與網頁的表情辨識測驗系統。</p>
+{% block content %} 
+
+<img src="static/img/index_banner.jpg" class="img-fluid" alt="...">
+
+<div class="container text-center ">
+    <div class="row justify-content-center">
+        <div class="col-md-12 p-2 bg-secondary text-white fs-4 d-flex">
+            <div class="flex-grow-1">歡迎參與 Autism Project 系統測試計劃</div>   
+        </div>
+            <div class="badge bg-warning text-dark fs-6 align-self-center p-2"> 台北科技大學 113 EMBA 桃資財 (朱秀坪)</div>
+        </div>
+    </div>
+    <!--<h1 class="display-5">歡迎來到 Autism Project</h1>-->
+    <!--<p class="lead mt-3">這是一個結合 AI 與網頁的表情辨識測驗系統。</p>-->
+    
     <hr class="my-4">
 
     <div class="row justify-content-center mt-4">
-        <div class="col-md-4 mb-3">
-            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg w-100">登入</a>
+        <div class="col-md-6 mb-3">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg w-100">我要登入</a>
         </div>
-        <div class="col-md-4 mb-3">
-            <a href="{{ url_for('auth.privacy_agreement') }}" class="btn btn-success btn-lg w-100">註冊</a>
+        <div class="col-md-6 mb-3">
+            <a href="{{ url_for('auth.privacy_agreement') }}" class="btn btn-info btn-lg w-100">我要註冊</a>
         </div>
     </div>
 </div>

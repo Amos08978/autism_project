@@ -1,0 +1,77 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<img src="../static/img/Facial.jpg" class="img-fluid mb-4" alt="...">
+<h2 class="mt-4">表情映射管理</h2>
+
+<!-- 新增映射表單 -->
+<form method="post" action="{{ url_for('admin.mapping_add') }}" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <input type="text" name="source_emotion" class="form-control" placeholder="模型表情 (happy)" required>
+        </div>
+        <div class="col-md-4">
+            <select name="mapped_stage" class="form-select" required>
+                <option value="喜">喜</option>
+                <option value="怒">怒</option>
+                <option value="哀">哀</option>
+                <option value="樂">樂</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-warning w-100">新增映射</button>
+        </div>
+    </div>
+</form>
+
+<!-- 秒數與拍照次數設定 -->
+<h3 class="mt-5">拍照設定</h3>
+<form method="post" action="{{ url_for('admin.update_capture_settings') }}" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label">拍照間隔秒數</label>
+            <input type="number" name="interval" class="form-control" value="{{ interval }}" min="1" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">拍照次數</label>
+            <input type="number" name="times" class="form-control" value="{{ times }}" min="1" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-success w-100">更新設定</button>
+        </div>
+    </div>
+</form>
+
+<!-- 映射列表 -->
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>模型表情</th>
+            <th>對應關卡</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in mappings %}
+        <tr>
+            <td>{{ m.source_emotion }}</td>
+            <td>
+                <form method="post" action="{{ url_for('admin.mapping_edit', id=m.id) }}">
+                    <select name="mapped_stage" class="form-select">
+                        <option value="喜" {% if m.mapped_stage=="喜" %}selected{% endif %}>喜</option>
+                        <option value="怒" {% if m.mapped_stage=="怒" %}selected{% endif %}>怒</option>
+                        <option value="哀" {% if m.mapped_stage=="哀" %}selected{% endif %}>哀</option>
+                        <option value="樂" {% if m.mapped_stage=="樂" %}selected{% endif %}>樂</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-success mt-1">更新</button>
+                </form>
+            </td>
+            <td>
+                <form method="post" action="{{ url_for('admin.mapping_delete', id=m.id) }}">
+                    <button type="submit" class="btn btn-sm btn-danger mt-1">刪除</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

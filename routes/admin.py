@@ -3,11 +3,16 @@ from sqlalchemy.orm import Session
 from models.base import SessionLocal
 from models.expressiontypes import ExpressionTypes
 from models.expressionimages import ExpressionImages
+from models.expressionmapping import ExpressionMapping
 from models.testresults import TestResults
 from models.accounts import Accounts
 from collections import defaultdict
 from sqlalchemy.orm import joinedload
 from datetime import datetime
+from models.capturesettings import CaptureSettings
+from models.testrecord import TestRecord
+from sqlalchemy.exc import IntegrityError
+
 import os
 
 from werkzeug.utils import secure_filename
@@ -76,6 +81,9 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+
+
 @admin_bp.route("/add_image", methods=["GET", "POST"])
 def add_image():
     if not session.get("is_admin"):
@@ -86,36 +94,48 @@ def add_image():
     types = db.query(ExpressionTypes).all()
 
     if request.method == "POST":
-        type_id = request.form["type_id"]
-        stage = request.form["stage"]
-
-        # 檢查是否已存在同類型+表情
-        existing = db.query(ExpressionImages).filter_by(type_id=type_id, stage=stage).first()
-        if existing:
-            # ✅ 不直接跳轉，先顯示提示訊息
-            flash(f"該類型的表情『{stage}』已存在，請確認是否要編輯。")
-            return render_template("add_image.html", types=types, existing_image=existing)
+        type_id = int(request.form["type_id"])
+        stage = request.form["stage"].strip()
 
         file = request.files.get("image_file")
+        audio_file = request.files.get("audio_file")
+
         if file and allowed_file(file.filename):
+            # 儲存圖片
             filename = f"{type_id}_{stage}.png"
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             file.save(filepath)
 
+            # 儲存音檔（可選）
+            audio_path = None
+            if audio_file and audio_file.filename != "":
+                audio_filename = f"{type_id}_{stage}.mp3"
+                audio_folder = os.path.join("static", "audio")
+                os.makedirs(audio_folder, exist_ok=True)
+                audio_file.save(os.path.join(audio_folder, audio_filename))
+                audio_path = f"audio/{audio_filename}"
+
             new_image = ExpressionImages(
                 type_id=type_id,
                 stage=stage,
-                image_path=f"img/{filename}"
+                image_path=f"img/{filename}",
+                audio_path=audio_path
             )
             db.add(new_image)
-            db.commit()
-            flash("新增圖片成功")
-            return redirect(url_for("admin.admin_index"))
+            try:
+                db.commit()
+                flash("新增圖片成功")
+                return redirect(url_for("admin.image_list"))
+            except IntegrityError:
+                db.rollback()
+                flash(f"該類型的表情『{stage}』已存在，請改用編輯功能。")
+                return redirect(url_for("admin.image_list"))
         else:
             flash("檔案格式不支援")
 
     return render_template("add_image.html", types=types)
+
 
 @admin_bp.route("/images")
 def image_list():
@@ -150,6 +170,8 @@ def delete_image(image_id):
 
     return redirect(url_for("admin.image_list"))
 
+
+
 @admin_bp.route("/edit_image/<int:image_id>", methods=["GET", "POST"])
 def edit_image(image_id):
     if not session.get("is_admin"):
@@ -160,15 +182,14 @@ def edit_image(image_id):
     image = db.query(ExpressionImages).filter_by(id=image_id).first()
     types = db.query(ExpressionTypes).all()
 
-    if not image:
-        flash("找不到圖片")
-        return redirect(url_for("admin.image_list"))
-
     if request.method == "POST":
-        image.type_id = request.form["type_id"]
-        image.stage = request.form["stage"]
-        file = request.files.get("image_file")
+        image.stage = request.form["stage"].strip()
+        image.type_id = int(request.form["type_id"])
 
+        file = request.files.get("image_file")
+        audio_file = request.files.get("audio_file")
+
+        # 更新圖片（可選）
         if file and allowed_file(file.filename):
             filename = f"{image.type_id}_{image.stage}.png"
             filepath = os.path.join(UPLOAD_FOLDER, filename)
@@ -176,11 +197,26 @@ def edit_image(image_id):
             file.save(filepath)
             image.image_path = f"img/{filename}"
 
-        db.commit()
-        flash("圖片已更新")
-        return redirect(url_for("admin.image_list"))
+        # 更新音檔（可選）
+        if audio_file and audio_file.filename != "":
+            audio_filename = f"{image.type_id}_{image.stage}.mp3"
+            audio_folder = os.path.join("static", "audio")
+            os.makedirs(audio_folder, exist_ok=True)
+            audio_file.save(os.path.join(audio_folder, audio_filename))
+            image.audio_path = f"audio/{audio_filename}"
+
+        try:
+            db.commit()
+            flash("更新成功")
+            return redirect(url_for("admin.image_list"))
+        except IntegrityError:
+            db.rollback()
+            flash(f"該類型的表情『{image.stage}』已存在，請改用其他組合。")
+            return redirect(url_for("admin.image_list"))
 
     return render_template("edit_image.html", image=image, types=types)
+
+
 
 
 
@@ -198,6 +234,7 @@ def view_results():
         selected_child = child_name
         account = db.query(Accounts).filter_by(child_name=child_name).first()
         if account:
+            # 小朋友選擇紀錄 (TestResults)
             results = (
                 db.query(TestResults)
                 .options(joinedload(TestResults.image).joinedload(ExpressionImages.type))
@@ -206,31 +243,50 @@ def view_results():
                 .all()
             )
 
-            # ✅ 改成用 batch_id 分組
+            # AI 判斷紀錄 (TestRecord)
+            records_ai = (
+                db.query(TestRecord)
+                .filter_by(account_id=account.id)
+                .order_by(TestRecord.test_datetime)
+                .all()
+            )
+
+            # 用 batch_id 合併
             batches = {}
             for r in results:
                 batch_id = r.batch_id or "未知批次"
                 if batch_id not in batches:
-                    batches[batch_id] = []
-                batches[batch_id].append(r)
+                    batches[batch_id] = {"results": [], "records_ai": []}
+                batches[batch_id]["results"].append(r)
                 total_records += 1
 
-                # 統計類型次數
                 if r.image and r.image.type:
                     type_name = r.image.type.type_name
                     type_counts[type_name] = type_counts.get(type_name, 0) + 1
 
+            for rec in records_ai:
+                batch_id = rec.batch_id or "未知批次"
+                if batch_id not in batches:
+                    batches[batch_id] = {"results": [], "records_ai": []}
+                batches[batch_id]["records_ai"].append(rec)
+
+            # 整理成 grouped_results
             test_number = 0
             for batch_id, batch in batches.items():
                 test_number += 1
-                type_name = batch[0].image.type.type_name if batch[0].image and batch[0].image.type else "未知"
-                start_time = batch[0].test_datetime
+                type_name = (
+                    batch["results"][0].image.type.type_name
+                    if batch["results"] and batch["results"][0].image and batch["results"][0].image.type
+                    else "未知"
+                )
+                start_time = batch["results"][0].test_datetime if batch["results"] else None
 
-                if len(batch) == 4:
-                    correct = sum(1 for x in batch if x.system_result == "O")
+                if len(batch["results"]) == 4:
+                    correct = sum(1 for x in batch["results"] if x.system_result == "O")
                     accuracy = round((correct / 4) * 100, 2)
                     grouped_results.append({
-                        "records": batch,
+                        "results": batch["results"],
+                        "records_ai": batch["records_ai"],
                         "accuracy": accuracy,
                         "test_number": test_number,
                         "incomplete": False,
@@ -240,7 +296,8 @@ def view_results():
                     })
                 else:
                     grouped_results.append({
-                        "records": batch,
+                        "results": batch["results"],
+                        "records_ai": batch["records_ai"],
                         "accuracy": None,
                         "test_number": test_number,
                         "incomplete": True,
@@ -249,7 +306,6 @@ def view_results():
                         "start_time": start_time
                     })
 
-    # 計算比例
     type_stats = []
     for type_name, count in type_counts.items():
         percentage = round((count / total_records) * 100, 2) if total_records > 0 else 0
@@ -262,8 +318,6 @@ def view_results():
         selected_child=selected_child,
         type_stats=type_stats
     )
-
-
 
 
 @admin_bp.route("/types")
@@ -330,3 +384,84 @@ def delete_type(type_id):
         flash("找不到類型")
 
     return redirect(url_for("admin.type_list"))
+
+
+
+
+
+@admin_bp.route("/mapping_list")
+def mapping_list():
+    db = SessionLocal()
+    mappings = db.query(ExpressionMapping).all()
+    return render_template("admin_mapping.html", mappings=mappings)
+
+@admin_bp.route("/mapping_add", methods=["POST"])
+def mapping_add():
+    source_emotion = request.form["source_emotion"]
+    mapped_stage = request.form["mapped_stage"]
+
+    db = SessionLocal()
+    new_map = ExpressionMapping(source_emotion=source_emotion, mapped_stage=mapped_stage)
+    db.add(new_map)
+    db.commit()
+    flash("新增映射成功")
+    return redirect(url_for("admin.mapping_list"))
+
+@admin_bp.route("/mapping_edit/<int:id>", methods=["POST"])
+def mapping_edit(id):
+    mapped_stage = request.form["mapped_stage"]
+    db = SessionLocal()
+    mapping = db.query(ExpressionMapping).get(id)
+    if mapping:
+        mapping.mapped_stage = mapped_stage
+        db.commit()
+        flash("更新成功")
+    return redirect(url_for("admin.mapping_list"))
+
+@admin_bp.route("/mapping_delete/<int:id>", methods=["POST"])
+def mapping_delete(id):
+    db = SessionLocal()
+    mapping = db.query(ExpressionMapping).get(id)
+    if mapping:
+        db.delete(mapping)
+        db.commit()
+        flash("刪除成功")
+    return redirect(url_for("admin.mapping_list"))
+
+@admin_bp.route("/update_capture_settings", methods=["POST"])
+def update_capture_settings():
+    interval = int(request.form["interval"])
+    times = int(request.form["times"])
+    db = SessionLocal()
+    settings = db.query(CaptureSettings).first()
+    if not settings:
+        settings = CaptureSettings(interval=interval, times=times)
+        db.add(settings)
+    else:
+        settings.interval = interval
+        settings.times = times
+    db.commit()
+    flash("拍照設定已更新", "success")
+    return redirect(url_for("admin.mapping"))
+
+@admin_bp.route("/mapping")
+def mapping():
+    db = SessionLocal()
+    mappings = db.query(ExpressionMapping).all()
+    settings = db.query(CaptureSettings).first()
+    return render_template("admin_mapping.html",
+                           mappings=mappings,
+                           interval=settings.interval if settings else 5,
+                           times=settings.times if settings else 3)
+
+@admin_bp.route("/result_override/<int:id>", methods=["POST"])
+def result_override(id):
+    new_result = request.form["final_result"]
+    db = SessionLocal()
+    record = db.query(TestRecord).filter_by(id=id).first()
+    if record:
+        record.manual_override = True
+        record.final_result = new_result
+        db.commit()
+        flash("人工覆核已更新", "success")
+    return redirect(url_for("admin.mapping"))  # 或者跳回 admin.results

@@ -1,25 +1,30 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<h2 class="text-center mt-4">管理者後台首頁</h2>
-
+<!--<h2 class="text-center mt-4">管理者後台首頁</h2>-->
+<img src="../static/img/adm_backend.jpg" class="img-fluid mb-4" alt="...">
 <div class="row justify-content-center mt-4">
     <div class="col-md-3 col-6 text-center mb-4">
-        <a href="{{ url_for('admin.type_list') }}" class="btn btn-primary w-100">
+        <a href="{{ url_for('admin.type_list') }}" class="btn btn-success w-100">
             類型管理
         </a>
     </div>
     <div class="col-md-3 col-6 text-center mb-4">
-        <a href="{{ url_for('admin.image_list') }}" class="btn btn-primary w-100">
+        <a href="{{ url_for('admin.image_list') }}" class="btn btn-success w-100">
             圖片管理
         </a>
     </div>
     <div class="col-md-3 col-6 text-center mb-4">
-        <a href="{{ url_for('admin.view_results') }}" class="btn btn-primary w-100">
-            測驗結果
+        <a href="{{ url_for('admin.mapping_list') }}" class="btn btn-success w-100">
+            表情映射管理
         </a>
     </div>
     <div class="col-md-3 col-6 text-center mb-4">
-        <a href="{{ url_for('admin.admin_logout') }}" class="btn btn-danger w-100">
+        <a href="{{ url_for('admin.view_results') }}" class="btn btn-success w-100">
+            測驗結果
+        </a>
+    </div>
+    <div class="col-md-12 col-6 text-center mb-4">
+        <a href="{{ url_for('admin.admin_logout') }}" class="btn btn-warning w-100">
             登出
         </a>
     </div>

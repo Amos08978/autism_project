@@ -1,7 +1,7 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<h2 class="mt-4">測試結果查詢</h2>
-
+<!--<h2 class="mt-4">測試結果查詢</h2>-->
+<img src="../static/img/TestResultQuery.jpg" class="img-fluid mb-4" alt="...">
 <form method="post" class="mb-4">
     <label class="form-label">選擇小朋友</label>
     <select name="child_name" class="form-select" required>
@@ -12,11 +12,10 @@
             </option>
         {% endfor %}
     </select>
-    <button type="submit" class="btn btn-primary mt-2">查詢</button>
+    <button type="submit" class="btn btn-success mt-3 w-100">查詢</button>
 </form>
 
 {% if grouped_results %}
-<!-- ✅ 類型比例統計 -->
     {% if type_stats %}
     <h3 class="mt-4">各類型比例統計</h3>
     <table class="table table-striped">
@@ -40,41 +39,91 @@
     {% endif %}
     
     {% for group in grouped_results %}
-    {% if group.incomplete %}
-        <h4 class="mt-3">
-        第 {{ group.test_number }} 次測驗（{{ group.type_name }}，未完成）
-        </h4>
-    {% else %}
-        <h4 class="mt-3">
-        第 {{ group.test_number }} 次測驗（{{ group.type_name }}）
-        </h4>
+    <h4 class="mt-3">
+        第 {{ group.test_number }} 次測驗（{{ group.type_name }}{% if group.incomplete %}，未完成{% endif %}）
+    </h4>
+    {% if not group.incomplete %}
         <p><strong>正確率：</strong> {{ group.accuracy }} %</p>
     {% endif %}
     <p><strong>批次 ID：</strong> {{ group.batch_id }}</p>
-    <p><strong>開始時間：</strong> {{ group.start_time.strftime("%Y-%m-%d %H:%M:%S") }}</p>
+    <p><strong>開始時間：</strong>
+        {% if group.start_time %}
+            {{ group.start_time.strftime("%Y-%m-%d %H:%M:%S") }}
+        {% else %}
+            未知
+        {% endif %}
+    </p>
 
     <table class="table table-bordered mt-2">
         <thead>
-        <tr>
+            <tr>
             <th>時間</th>
             <th>關卡</th>
-            <th>小朋友選擇</th>
-            <th>系統判斷</th>
-        </tr>
+            <th>小朋友選擇</th>   <!-- TestResults.system_result -->
+            <th>系統判斷</th>     <!-- AI 判斷正確/錯誤 -->
+            <th>AI 判斷表情</th> <!-- TestRecord.ai_emotion -->
+            <th>截圖</th>         <!-- TestRecord.image_file -->
+            <th>人工覆核</th>
+            </tr>
         </thead>
         <tbody>
-        {% for record in group.records %}
+            <!-- 小朋友選擇 (TestResults) -->
+            {% for record in group.results %}
             <tr>
-            <td>{{ record.test_datetime }}</td>
-            <td>{{ record.stage }}</td>
-            <td>{{ record.child_choice }}</td>
-            <td>{{ record.system_result }}</td>
+                <td>{{ record.test_datetime }}</td>
+                <td>{{ record.stage }}</td>
+                <td>{{ record.system_result }}</td> <!-- ✅ 正確顯示 TestResults.system_result -->
+                <td>（此列為小朋友選擇，無 AI 判斷）</td>
+                <td>無</td>
+                <td>無圖片</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.result_override', id=record.id) }}">
+                        <select name="final_result" class="form-select form-select-sm">
+                            <option value="O" {% if record.final_result=="O" %}selected{% endif %}>正確</option>
+                            <option value="X" {% if record.final_result=="X" %}selected{% endif %}>錯誤</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-warning mt-1">覆核</button>
+                    </form>
+                    {% if record.manual_override %}
+                        <span class="badge bg-info">已覆核</span>
+                    {% endif %}
+                </td>
             </tr>
-        {% endfor %}
+            {% endfor %}
+
+            <!-- AI 判斷 (TestRecord) -->
+            {% for rec in group.records_ai %}
+            <tr class="table-info">
+                <td>{{ rec.test_datetime }}</td>
+                <td>{{ rec.stage }}</td>
+                <td>（AI 判斷，不適用）</td>
+                <td>{{ rec.system_result }}</td> <!-- AI 判斷正確/錯誤 -->
+                <td>{{ rec.ai_emotion }}</td>
+                <td>
+                    {% if rec.image_file %}
+                    <a href="{{ url_for('static', filename='captured_images/' ~ rec.image_file) }}" target="_blank">
+                        查看圖片
+                    </a>
+                    {% else %}
+                    無圖片
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.result_override', id=rec.id) }}">
+                        <select name="final_result" class="form-select form-select-sm">
+                            <option value="O" {% if rec.final_result=="O" %}selected{% endif %}>正確</option>
+                            <option value="X" {% if rec.final_result=="X" %}selected{% endif %}>錯誤</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-warning mt-1">覆核</button>
+                    </form>
+                    {% if rec.manual_override %}
+                        <span class="badge bg-info">已覆核</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
     {% endfor %}
-
-
 {% endif %}
 {% endblock %}

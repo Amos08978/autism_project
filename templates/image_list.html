@@ -9,6 +9,7 @@
             <th>類型</th>
             <th>階段</th>
             <th>圖片</th>
+            <th>音檔</th>
             <th>操作</th>
         </tr>
     </thead>
@@ -23,6 +24,18 @@
                      alt="{{ img.stage }}" 
                      style="max-height:80px;">
             </td>
+
+            <td>
+                {% if img.audio_path %}
+                    <audio controls style="max-width:150px;">
+                        <source src="{{ url_for('static', filename=img.audio_path) }}" type="audio/mpeg">
+                    </audio>
+                {% else %}
+                    <span class="text-muted">無</span>
+                {% endif %}
+            </td>
+
+
             <td>
                 <a href="{{ url_for('admin.edit_image', image_id=img.id) }}" class="btn btn-primary btn-sm">編輯</a>
                 <form method="post" action="{{ url_for('admin.delete_image', image_id=img.id) }}" style="display:inline;">

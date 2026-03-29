@@ -1,7 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>挑戰完成！</h2>
-<p>恭喜你已經完成所有四個表情關卡：喜、怒、哀、樂。</p>
+<h2>恭喜你 ! 已完成闖關 ! <a href="{{ url_for('game_home') }}" class="btn btn-danger mx-4 p-2">我想重新挑戰</a></h2>
+<p></p>
 
-<a href="{{ url_for('game_home') }}" class="btn btn-primary">重新挑戰</a>
+<hr class="my-3">
+<img src="static/img/LEVEL_GIF.gif" class="img-fluid mb-4" alt="...">
+<audio id="startSound" src="static/audio/start.mp3"></audio>
+
+    <audio id="startSound" src="static/audio/start.mp3" autoplay muted loop></audio>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            const audio = document.getElementById("startSound");
+
+            // 等使用者互動後再開聲音
+            document.addEventListener("click", () => {
+            audio.muted = false;   // 解除靜音
+            audio.play();          // 播放音效
+            });
+        });
+    </script>
+
+
 {% endblock %}

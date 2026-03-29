@@ -1,13 +1,14 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<h2>管理者登入</h2>
+<!--<h2>管理者登入</h2>-->
+<img src="../static/img/adm_login.jpg" class="img-fluid mb-4" alt="...">
 <form method="post" class="row g-3">
-    <div class="col-md-6">
+    <div class="col-md-12">
         <label class="form-label">密碼</label>
         <input type="password" name="password" class="form-control" required>
     </div>
     <div class="col-12">
-        <button type="submit" class="btn btn-primary">登入</button>
+        <button type="submit" class="btn btn-success w-100">登入</button>
     </div>
 </form>
 {% with messages = get_flashed_messages() %}
